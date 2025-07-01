@@ -1,9 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { X, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -12,29 +11,6 @@ interface LoginModalProps {
 
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
-  const { login, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await login(email, password);
-      toast({
-        title: t('success'),
-        description: 'Login successful!'
-      });
-      onClose();
-      setEmail('');
-      setPassword('');
-    } catch (error) {
-      toast({
-        title: t('error'),
-        description: 'Login failed. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -48,57 +24,33 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="municipal-input w-full"
-              placeholder="Enter your email"
-              required
-            />
+        <div className="text-center py-8">
+          <div className="mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-municipal-blue/10 rounded-full mb-4">
+              <ExternalLink className="h-8 w-8 text-municipal-blue" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Welcome to TriPro Municipality
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Sign in to access all municipal services and features
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="municipal-input w-full"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
+          <Link
+            to="/login"
+            onClick={onClose}
+            className="municipal-button w-full flex items-center justify-center gap-2 mb-4"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Go to Login Page
+          </Link>
 
-          <div className="flex gap-2 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 municipal-button disabled:opacity-50"
-            >
-              {isLoading ? t('loading') : t('login')}
-            </button>
+          <div className="mt-4 text-xs text-gray-500">
+            <p>Demo credentials:</p>
+            <p>Citizen: citizen@test.com / password</p>
+            <p>Admin: admin@test.com / password</p>
           </div>
-        </form>
-
-        <div className="mt-4 text-xs text-gray-500">
-          <p>Demo credentials:</p>
-          <p>Citizen: citizen@test.com / password</p>
-          <p>Admin: admin@test.com / password</p>
         </div>
       </div>
     </div>
