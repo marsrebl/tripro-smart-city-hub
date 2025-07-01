@@ -19,10 +19,6 @@ export default {
 			}
 		},
 		extend: {
-			fontFamily: {
-				'sans': ['Inter', 'Noto Sans Devanagari', 'system-ui', 'sans-serif'],
-				'nepali': ['Noto Sans Devanagari', 'system-ui', 'sans-serif'],
-			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -57,16 +53,22 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+				// Municipal theme colors inspired by Nepali government sites
+				municipal: {
+					blue: '#1e40af',
+					'blue-dark': '#1e3a8a',
+					'blue-light': '#3b82f6',
+					green: '#059669',
+					'green-dark': '#047857',
+					red: '#dc2626',
+					orange: '#ea580c',
+					gray: '#64748b',
+					'gray-light': '#f1f5f9'
 				}
+			},
+			fontFamily: {
+				'nepali': ['Noto Sans Devanagari', 'system-ui', 'sans-serif'],
+				'english': ['Inter', 'system-ui', 'sans-serif']
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -100,22 +102,16 @@ export default {
 						transform: 'translateY(0)'
 					}
 				},
-				'scale-in': {
-					'0%': {
-						transform: 'scale(0.95)',
-						opacity: '0'
-					},
-					'100%': {
-						transform: 'scale(1)',
-						opacity: '1'
-					}
+				'ticker': {
+					'0%': { transform: 'translateX(100%)' },
+					'100%': { transform: 'translateX(-100%)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.6s ease-out',
-				'scale-in': 'scale-in 0.3s ease-out'
+				'fade-in': 'fade-in 0.3s ease-out',
+				'ticker': 'ticker 30s linear infinite'
 			}
 		}
 	},
