@@ -28,20 +28,14 @@ interface LocationMarkerProps {
 }
 
 const LocationMarker: React.FC<LocationMarkerProps> = ({ position, setPosition }) => {
-  const map = useMapEvents({
+  useMapEvents({
     click(e) {
       setPosition([e.latlng.lat, e.latlng.lng]);
     },
   });
 
-  useEffect(() => {
-    if (position) {
-      map.flyTo(position, map.getZoom());
-    }
-  }, [map, position]);
-
   return position === null ? null : (
-    <Marker position={position} />
+    <Marker position={position} icon={defaultIcon} />
   );
 };
 
