@@ -55,7 +55,7 @@ const Header: React.FC = () => {
               <div className="container mx-auto px-4 flex justify-between items-center text-sm">
                 {/* Left side: Emergency numbers in Nepali */}
                 <div className="flex gap-6">
-                  <span>एम्बुलेन्स:fukeer 9865266142</span>
+                  <span>एम्बुलेन्स: 9865266142</span>
                   <span>दमकल: 9865321455</span>
                   <span>ट्राफिक प्रहरी: 9865324578</span>
                   <span>नेपाल प्रहरी: 9865324512</span>
