@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -39,11 +40,15 @@ const Header: React.FC = () => {
   }, []);
 
   const navigationItems = [
-    { key: 'home', path: '/' },
-    { key: 'services', path: '/services' },
-    { key: 'gallery', path: '/gallery' },
-    { key: 'about', path: '/about' },
-    { key: 'contact', path: '/contact' }
+    { key: 'home', path: '/', label: 'Home' },
+    { key: 'egovservices', path: '/services', label: 'E-gov Services' },
+    { key: 'reportissue', path: '/report', label: 'Report an Issue' },
+    { key: 'notice', path: '/news', label: 'Notice/Information' },
+    { key: 'finance', path: '/pay-taxes', label: 'Finance' },
+    { key: 'programs', path: '/programs', label: 'Program/Project' },
+    { key: 'reports', path: '/reports', label: 'Reports' },
+    { key: 'gallery', path: '/gallery', label: 'Gallery' },
+    { key: 'contact', path: '/contact', label: 'Contact us' }
   ];
 
   return (
@@ -100,34 +105,34 @@ const Header: React.FC = () => {
                 </div>
                 <div>
                   <h1 className={`text-2xl font-bold text-white ${currentLanguage === 'ne' ? 'nepali' : ''}`}>
-                    {t('city_name')}
+                    Biratnagar Metropolitan Office Of Municipal Executive
                   </h1>
                   <p className="text-sm text-white">Digital Government Services</p>
                 </div>
               </div>
 
               {/* Desktop Navigation */}
-              <nav className="hidden lg:flex items-center gap-6">
+              <nav className="hidden lg:flex items-center gap-4">
                 {navigationItems.map((item) => (
                   <Link
                     key={item.key}
                     to={item.path}
-                    className="nav-link text-white font-semibold text-lg tracking-wide"
+                    className="nav-link text-white font-medium text-sm tracking-wide"
                   >
-                    {t(item.key)}
+                    {item.label}
                   </Link>
                 ))}
 
                 {user ? (
                   <div className="flex items-center gap-3">
-                    <span className="text-lg text-white">Welcome, {user.name}</span>
-                    <button onClick={logout} className="municipal-button text-sm">
+                    <span className="text-sm text-white">Welcome, {user.name}</span>
+                    <button onClick={logout} className="municipal-button text-xs">
                       {t('logout')}
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => setShowLoginModal(true)} className="municipal-button text-sm">
-                    {t('login')}
+                  <button onClick={() => setShowLoginModal(true)} className="municipal-button text-xs">
+                    Login
                   </button>
                 )}
               </nav>
@@ -149,7 +154,7 @@ const Header: React.FC = () => {
                       className="mobile-nav-link text-white font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      {t(item.key)}
+                      {item.label}
                     </Link>
                   ))}
 
@@ -174,7 +179,7 @@ const Header: React.FC = () => {
                       }}
                       className="municipal-button w-fit"
                     >
-                      {t('login')}
+                      Login
                     </button>
                   )}
                 </div>
@@ -191,9 +196,10 @@ const Header: React.FC = () => {
       {/* Hover Styling */}
       <style>{`
         .nav-link {
-          padding: 6px 12px;
+          padding: 6px 8px;
           border-radius: 6px;
           transition: all 0.3s ease;
+          white-space: nowrap;
         }
 
         .nav-link:hover {
