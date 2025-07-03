@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import Services from "./pages/Services";
 import Contact from "./pages/Contact";
+import ETaxPayment from "./pages/ETaxPayment";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,31 @@ const App = () => (
                 <Route path="/news/:id" element={<Layout><News /></Layout>} />
                 <Route path="/gallery" element={<Layout><Gallery /></Layout>} />
                 <Route path="/admin" element={<Layout><AdminDashboard /></Layout>} />
+                
+                {/* E-Gov Services */}
+                <Route path="/e-tax-payment" element={<Layout><ETaxPayment /></Layout>} />
+                <Route path="/application-letter" element={<Layout><Services /></Layout>} />
+                <Route path="/registration-portal" element={<Layout><Services /></Layout>} />
+                
+                {/* Notice/Information */}
+                <Route path="/procurement-notices" element={<Layout><News /></Layout>} />
+                <Route path="/acts-laws" element={<Layout><Downloads /></Layout>} />
+                <Route path="/tax-fees" element={<Layout><Downloads /></Layout>} />
+                <Route path="/council-decisions" element={<Layout><News /></Layout>} />
+                
+                {/* Finance */}
+                <Route path="/income-expenditure" element={<Layout><Downloads /></Layout>} />
+                <Route path="/procurement-plan" element={<Layout><Downloads /></Layout>} />
+                
+                {/* Programs/Projects */}
+                <Route path="/budget-program" element={<Layout><Downloads /></Layout>} />
+                <Route path="/plan-project" element={<Layout><Services /></Layout>} />
+                <Route path="/program-schedule" element={<Layout><News /></Layout>} />
+                
+                {/* Reports */}
+                <Route path="/annual-report" element={<Layout><Downloads /></Layout>} />
+                <Route path="/trimester-report" element={<Layout><Downloads /></Layout>} />
+                
                 <Route path="*" element={<Layout><NotFound /></Layout>} />
               </Routes>
             </BrowserRouter>

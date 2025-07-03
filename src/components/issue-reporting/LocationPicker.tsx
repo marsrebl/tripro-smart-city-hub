@@ -1,235 +1,132 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import { Icon } from 'leaflet';
-import { X, MapPin, Search, Loader2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default markers in react-leaflet
-const defaultIcon = new Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+// Fix for default markers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
 interface LocationPickerProps {
-  onLocationSelect: (location: {lat: number, lng: number, address?: string}) => void;
-  onClose: () => void;
-  currentLocation?: {lat: number, lng: number, address?: string} | null;
+  onLocationSelect: (location: { lat: number; lng: number; address?: string }) => void;
+  initialLocation?: { lat: number; lng: number };
 }
 
-interface LocationMarkerProps {
-  position: [number, number] | null;
-  setPosition: (position: [number, number]) => void;
-}
+const LocationPicker: React.FC<LocationPickerProps> = ({ onLocationSelect, initialLocation }) => {
+  const [selectedLocation, setSelectedLocation] = useState(
+    initialLocation || { lat: 26.4525, lng: 87.2718 } // Biratnagar coordinates
+  );
+  const [address, setAddress] = useState<string>('');
 
-const LocationMarker: React.FC<LocationMarkerProps> = ({ position, setPosition }) => {
-  useMapEvents({
-    click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
-    },
+  const customIcon = L.icon({
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
   });
 
-  return position === null ? null : (
-    <Marker position={position} icon={defaultIcon} />
-  );
-};
+  // Component to handle map clicks
+  const MapClickHandler = () => {
+    useMapEvents({
+      click: (e) => {
+        const { lat, lng } = e.latlng;
+        setSelectedLocation({ lat, lng });
+        onLocationSelect({ lat, lng, address });
+        
+        // Reverse geocoding (simplified)
+        setAddress(`Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      },
+    });
 
-const LocationPicker: React.FC<LocationPickerProps> = ({ 
-  onLocationSelect, 
-  onClose, 
-  currentLocation 
-}) => {
-  const { t } = useTranslation();
-  const [position, setPosition] = useState<[number, number] | null>(
-    currentLocation ? [currentLocation.lat, currentLocation.lng] : null
-  );
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-
-  // Biratnagar center coordinates
-  const biratnagar: [number, number] = [26.4525, 87.2718];
-  const mapCenter = position || biratnagar;
-
-  // Mock search function with Biratnagar locations
-  const searchLocation = async (query: string) => {
-    if (!query.trim()) return;
-    
-    setIsSearching(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock results for Biratnagar municipality areas
-    const mockResults = [
-      { 
-        display_name: `${query} - ${t('biratnagar')}`, 
-        lat: 26.4525 + (Math.random() - 0.5) * 0.01, 
-        lon: 87.2718 + (Math.random() - 0.5) * 0.01 
-      },
-      { 
-        display_name: `${query} - ${t('morang')}`, 
-        lat: 26.4525 + (Math.random() - 0.5) * 0.02, 
-        lon: 87.2718 + (Math.random() - 0.5) * 0.02 
-      },
-      { 
-        display_name: `${query} - Traffic Chowk`, 
-        lat: 26.4589, 
-        lon: 87.2750 
-      },
-      { 
-        display_name: `${query} - Main Road`, 
-        lat: 26.4511, 
-        lon: 87.2701 
-      },
-      { 
-        display_name: `${query} - Rani Pokhari`, 
-        lat: 26.4567, 
-        lon: 87.2698 
-      }
-    ];
-    
-    setSearchResults(mockResults);
-    setIsSearching(false);
+    return null;
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    searchLocation(searchQuery);
-  };
-
-  const selectSearchResult = (result: any) => {
-    const newPosition: [number, number] = [parseFloat(result.lat), parseFloat(result.lon)];
-    setPosition(newPosition);
-    setSearchResults([]);
-    setSearchQuery('');
-  };
-
-  const confirmLocation = () => {
-    if (position) {
-      onLocationSelect({
-        lat: position[0],
-        lng: position[1],
-        address: `${position[0].toFixed(6)}, ${position[1].toFixed(6)}`
-      });
+  useEffect(() => {
+    if (selectedLocation) {
+      onLocationSelect({ ...selectedLocation, address });
     }
-  };
+  }, [selectedLocation, address, onLocationSelect]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-bold text-municipal-blue">{t('select_location')}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+    <div className="w-full">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold mb-2">Select Location</h3>
+        <p className="text-sm text-gray-600">Click on the map to select the issue location</p>
+      </div>
+      
+      <div className="border rounded-lg overflow-hidden">
+        <MapContainer
+          center={[selectedLocation.lat, selectedLocation.lng]}
+          zoom={13}
+          style={{ height: '400px', width: '100%' }}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          <MapClickHandler />
+          <Marker 
+            position={[selectedLocation.lat, selectedLocation.lng]}
+            icon={customIcon}
           >
-            <X className="h-6 w-6" />
-          </button>
+            <Popup>
+              Selected Location<br />
+              Lat: {selectedLocation.lat.toFixed(6)}<br />
+              Lng: {selectedLocation.lng.toFixed(6)}
+            </Popup>
+          </Marker>
+        </MapContainer>
+      </div>
+      
+      {address && (
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p className="text-sm font-medium text-gray-700">Selected Address:</p>
+          <p className="text-sm text-gray-600">{address}</p>
         </div>
-
-        {/* Search */}
-        <div className="p-4 border-b">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('search_location')}
-                className="w-full municipal-input pl-10"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            </div>
-            <button
-              type="submit"
-              disabled={isSearching || !searchQuery.trim()}
-              className="municipal-button px-4 disabled:opacity-50"
-            >
-              {isSearching ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                t('search')
-              )}
-            </button>
-          </form>
-
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="mt-2 bg-white border rounded-lg shadow-lg max-h-32 overflow-y-auto">
-              {searchResults.map((result, index) => (
-                <button
-                  key={index}
-                  onClick={() => selectSearchResult(result)}
-                  className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-b-0 transition-colors"
-                >
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4 text-municipal-blue" />
-                    <span className="text-sm">{result.display_name}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+      )}
+      
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Latitude
+          </label>
+          <input
+            type="number"
+            value={selectedLocation.lat}
+            onChange={(e) => {
+              const lat = parseFloat(e.target.value);
+              if (!isNaN(lat)) {
+                setSelectedLocation(prev => ({ ...prev, lat }));
+              }
+            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            step="0.000001"
+          />
         </div>
-
-        {/* Map */}
-        <div className="relative" style={{ height: '400px' }}>
-          <MapContainer
-            center={mapCenter}
-            zoom={15}
-            style={{ height: '100%', width: '100%' }}
-          >
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <LocationMarker position={position} setPosition={setPosition} />
-          </MapContainer>
-
-          {/* Instructions overlay */}
-          {!position && (
-            <div className="absolute top-4 left-4 right-4 bg-white bg-opacity-90 rounded-lg p-3 z-[1000]">
-              <p className="text-sm text-center text-gray-700">
-                {t('click_map_to_pin')}
-              </p>
-            </div>
-          )}
-
-          {/* Biratnagar Info Overlay */}
-          <div className="absolute bottom-4 left-4 bg-municipal-blue bg-opacity-90 text-white rounded-lg p-3 z-[1000]">
-            <div className="flex items-center space-x-2">
-              <MapPin className="h-4 w-4" />
-              <span className="text-sm font-medium">{t('biratnagar')} {t('municipality_map')}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t flex justify-between items-center">
-          {position && (
-            <div className="text-sm text-gray-600">
-              {t('selected_location')}: {position[0].toFixed(6)}, {position[1].toFixed(6)}
-            </div>
-          )}
-          <div className="flex gap-3 ml-auto">
-            <button
-              onClick={onClose}
-              className="municipal-button-secondary"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              onClick={confirmLocation}
-              disabled={!position}
-              className="municipal-button disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {t('confirm_location')}
-            </button>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Longitude
+          </label>
+          <input
+            type="number"
+            value={selectedLocation.lng}
+            onChange={(e) => {
+              const lng = parseFloat(e.target.value);
+              if (!isNaN(lng)) {
+                setSelectedLocation(prev => ({ ...prev, lng }));
+              }
+            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            step="0.000001"
+          />
         </div>
       </div>
     </div>
