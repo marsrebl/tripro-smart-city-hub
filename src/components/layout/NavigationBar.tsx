@@ -1,9 +1,6 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTranslation } from 'react-i18next';
-import { User, LogOut, ChevronDown } from 'lucide-react';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -14,8 +11,6 @@ import {
 } from "@/components/ui/navigation-menu";
 
 const NavigationBar: React.FC = () => {
-  const { t } = useTranslation();
-  const { user, logout } = useAuth();
   const location = useLocation();
 
   const navigationItems = [
@@ -69,16 +64,10 @@ const NavigationBar: React.FC = () => {
     { key: 'contact', path: '/contact', label: 'Contact us' }
   ];
 
-  const handleLogin = () => {
-    const event = new Event('openLoginModal');
-    window.dispatchEvent(event);
-  };
-
   return (
     <div className="navigation-container">
       <div className="container mx-auto px-4">
         <nav className="navigation-wrapper">
-          {/* Navigation Links */}
           <NavigationMenu className="navigation-menu">
             <NavigationMenuList className="navigation-list">
               {navigationItems.map((item) => {
@@ -119,27 +108,6 @@ const NavigationBar: React.FC = () => {
               })}
             </NavigationMenuList>
           </NavigationMenu>
-
-          {/* Auth Section */}
-          <div className="auth-section">
-            {user ? (
-              <div className="user-menu">
-                <div className="user-info">
-                  <User className="h-4 w-4" />
-                  <span className="user-name">{user.name}</span>
-                </div>
-                <button onClick={logout} className="logout-btn">
-                  <LogOut className="h-4 w-4" />
-                  <span>{t('logout')}</span>
-                </button>
-              </div>
-            ) : (
-              <button onClick={handleLogin} className="login-btn">
-                <User className="h-4 w-4" />
-                <span>Login</span>
-              </button>
-            )}
-          </div>
         </nav>
       </div>
 
@@ -162,18 +130,19 @@ const NavigationBar: React.FC = () => {
         .navigation-wrapper {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: center;
           padding: 1rem 0;
-          gap: 2rem;
         }
 
         .navigation-menu {
           flex: 1;
+          max-width: 1200px;
         }
 
         .navigation-list {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 0.5rem;
           flex-wrap: wrap;
         }
@@ -244,49 +213,6 @@ const NavigationBar: React.FC = () => {
         .dropdown-item:hover {
           background: #f3f4f6;
           color: #1f2937;
-        }
-
-        .auth-section {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .user-menu {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .user-info {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: white;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        .logout-btn, .login-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 10px;
-          font-weight: 500;
-          font-size: 0.875rem;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          backdrop-filter: blur(10px);
-        }
-
-        .logout-btn:hover, .login-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
         @media (max-width: 1024px) {
