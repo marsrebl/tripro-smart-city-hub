@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,9 @@ import Layout from "./components/layout/Layout";
 import Index from "./pages/Index";
 import ReportIssue from "./pages/ReportIssue";
 import PayTaxes from "./pages/PayTaxes";
+import ETaxPayment from "./pages/ETaxPayment";
+import ApplicationLetter from "./pages/ApplicationLetter";
+import RegistrationPortal from "./pages/RegistrationPortal";
 import MyApplications from "./pages/MyApplications";
 import MyComplaints from "./pages/MyComplaints";
 import Downloads from "./pages/Downloads";
@@ -42,6 +44,9 @@ const App = () => (
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/report" element={<ReportIssue />} />
                   <Route path="/pay-taxes" element={<PayTaxes />} />
+                  <Route path="/e-tax-payment" element={<ETaxPayment />} />
+                  <Route path="/application-letter" element={<ApplicationLetter />} />
+                  <Route path="/registration-portal" element={<RegistrationPortal />} />
                   <Route path="/my-applications" element={<MyApplications />} />
                   <Route path="/my-complaints" element={<MyComplaints />} />
                   <Route path="/downloads" element={<Downloads />} />
