@@ -1,110 +1,177 @@
-
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
-import { LatLngExpression, Icon } from 'leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { Icon } from 'leaflet';
+import * as exifr from 'exifr';
+import { X, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default markers in Leaflet with Webpack
-delete (Icon.Default.prototype as any)._getIconUrl;
-Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+const defaultIcon = new Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
 });
 
 interface LocationPickerProps {
   onLocationSelect: (location: { lat: number; lng: number; address?: string }) => void;
   onClose: () => void;
-  currentLocation?: { lat: number; lng: number; address?: string };
+  currentLocation?: { lat: number; lng: number; address?: string } | null;
+  imageFile?: File | null;  // Added this line
 }
 
-const LocationPicker: React.FC<LocationPickerProps> = ({ onLocationSelect, onClose, currentLocation }) => {
-  const [position, setPosition] = useState<LatLngExpression>([26.4525, 87.2718]); // Biratnagar coordinates
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address?: string } | null>(
-    currentLocation || null
+const LocationMarker: React.FC<{
+  position: [number, number] | null;
+  setPosition: (pos: [number, number]) => void;
+}> = ({ position, setPosition }) => {
+  useMapEvents({
+    click(e) {
+      setPosition([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+
+  return position ? <Marker position={position} icon={defaultIcon} /> : null;
+};
+
+const getExifGPS = async (file: File): Promise<{ lat: number; lng: number } | null> => {
+  try {
+    const gps = await exifr.gps(file);
+    if (gps?.latitude && gps?.longitude) {
+      return { lat: gps.latitude, lng: gps.longitude };
+    }
+    return null;
+  } catch (err) {
+    console.warn("EXIF error", err);
+    return null;
+  }
+};
+
+const LocationPicker: React.FC<LocationPickerProps> = ({
+  onLocationSelect,
+  onClose,
+  currentLocation = null,
+  imageFile = null
+}) => {
+  const { t } = useTranslation();
+  const [position, setPosition] = useState<[number, number] | null>(
+    currentLocation ? [currentLocation.lat, currentLocation.lng] : null
   );
+  const [locationSource, setLocationSource] = useState<"exif" | "browser" | "manual" | null>(null);
+  const biratnagar: [number, number] = [26.4525, 87.2718];
 
   useEffect(() => {
-    if (currentLocation) {
-      setPosition([currentLocation.lat, currentLocation.lng]);
-      setSelectedLocation(currentLocation);
-    }
-  }, [currentLocation]);
-
-  // Component to handle map clicks
-  const MapClickHandler = () => {
-    useMapEvents({
-      click: async (e) => {
-        const { lat, lng } = e.latlng;
-        setPosition([lat, lng]);
-        
-        // Try to get address from coordinates (reverse geocoding)
-        let address = '';
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-          );
-          const data = await response.json();
-          address = data.display_name || '';
-        } catch (error) {
-          console.log('Could not fetch address:', error);
+    const tryExifThenBrowser = async () => {
+      if (imageFile) {
+        const exifLocation = await getExifGPS(imageFile);
+        if (exifLocation) {
+          setPosition([exifLocation.lat, exifLocation.lng]);
+          setLocationSource("exif");
+          return;
         }
+      }
 
-        const location = { lat, lng, address };
-        setSelectedLocation(location);
-        onLocationSelect(location);
-      },
-    });
-    return null;
+      // Ask to use browser location
+      const confirmed = window.confirm(
+        "No GPS data found in image. Use your device's location?"
+      );
+      if (confirmed) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setPosition([pos.coords.latitude, pos.coords.longitude]);
+            setLocationSource("browser");
+          },
+          () => {
+            alert("Browser location failed. Please pin location manually.");
+            setLocationSource("manual");
+          }
+        );
+      } else {
+        setLocationSource("manual");
+      }
+    };
+
+    tryExifThenBrowser();
+  }, [imageFile]);
+
+  const confirmLocation = () => {
+    if (position) {
+      onLocationSelect({
+        lat: position[0],
+        lng: position[1],
+        address: `${position[0].toFixed(6)}, ${position[1].toFixed(6)}`,
+      });
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Select Location</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-xl font-bold text-municipal-blue">
+            {t("select_location")}
+          </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="p-2 hover:bg-gray-100 rounded-full"
+            aria-label="Close"
           >
-            ✕
+            <X className="h-6 w-6" />
           </button>
         </div>
-        
-        <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold text-gray-800 mb-2">Select Location</h3>
-          <p className="text-sm text-gray-600">
-            Click on the map to select the location of the issue
-          </p>
-          {selectedLocation && (
-            <div className="mt-2 text-sm">
-              <p><strong>Selected:</strong> {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}</p>
-              {selectedLocation.address && (
-                <p className="text-gray-600 truncate">{selectedLocation.address}</p>
-              )}
+
+        {/* Map */}
+        <div className="relative" style={{ height: "400px" }}>
+          <MapContainer
+            center={position || biratnagar}
+            zoom={15}
+            style={{ height: "100%", width: "100%" }}
+          >
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <LocationMarker position={position} setPosition={setPosition} />
+          </MapContainer>
+
+          {/* Instruction overlay */}
+          {!position && (
+            <div className="absolute top-4 left-4 right-4 bg-white bg-opacity-90 rounded-lg p-3 z-[1000] text-sm text-center">
+              {t("click_map_to_pin")}
             </div>
           )}
+
+          <div className="absolute bottom-4 left-4 bg-municipal-blue bg-opacity-90 text-white rounded-lg p-3 z-[1000] text-sm">
+            <div className="flex items-center space-x-2">
+              <MapPin className="h-4 w-4" />
+              <span>
+                {t("biratnagar")} {t("municipality_map")} —{" "}
+                {locationSource || t("loading")}
+              </span>
+            </div>
+          </div>
         </div>
-        
-        <MapContainer
-          center={position}
-          zoom={13}
-          style={{ height: '400px', width: '100%' }}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-          <MapClickHandler />
-          {selectedLocation && (
-            <Marker position={[selectedLocation.lat, selectedLocation.lng]}>
-              <Popup>
-                Selected Location<br />
-                {selectedLocation.address && <span>{selectedLocation.address}</span>}
-              </Popup>
-            </Marker>
+
+        {/* Footer */}
+        <div className="p-4 border-t flex justify-between items-center">
+          {position && (
+            <div className="text-sm text-gray-600">
+              {t("selected_location")}: {position[0].toFixed(6)},{" "}
+              {position[1].toFixed(6)}
+            </div>
           )}
-        </MapContainer>
+          <div className="flex gap-3 ml-auto">
+            <button onClick={onClose} className="municipal-button-secondary">
+              {t("cancel")}
+            </button>
+            <button
+              onClick={confirmLocation}
+              disabled={!position}
+              className="municipal-button disabled:opacity-50"
+            >
+              {t("confirm_location")}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

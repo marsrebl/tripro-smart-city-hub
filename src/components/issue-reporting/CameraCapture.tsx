@@ -1,6 +1,5 @@
-
-import React, { useRef, useEffect, useState } from 'react';
-import { Camera, X, RotateCcw, Loader2 } from 'lucide-react';
+import React, { useRef, useState, useEffect } from "react";
+import { Camera, X, RotateCcw, Loader2 } from "lucide-react";
 
 interface CameraCaptureProps {
   onCapture: (file: File) => void;
@@ -10,74 +9,102 @@ interface CameraCaptureProps {
 const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
 
   useEffect(() => {
-    startCamera();
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [facingMode]);
+    return () => stopCamera(); // Clean up on unmount
+  }, []);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
 
   const startCamera = async () => {
+    setIsLoading(true);
+    setError("");
+
     try {
-      setIsLoading(true);
-      setError('');
-      
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
-      
+      stopCamera();
+
+      const constraints = {
+        video: {
+          facingMode, // Avoid using { exact: facingMode }
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+        },
+        audio: false,
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        await videoRef.current.play();
       }
+    } catch (err: any) {
+      console.error("Camera error:", err);
+
+      if (err.name === "OverconstrainedError") {
+        setError("यो उपकरणमा सो क्यामेरा मोड उपलब्ध छैन");
+      } else if (err.name === "NotAllowedError") {
+        setError("क्यामेरा अनुमति दिइएन");
+      } else if (err.name === "NotFoundError") {
+        setError("क्यामेरा फेला परेन");
+      } else if (err.name === "NotReadableError") {
+        setError("क्यामेरा प्रयोगमा छ");
+      } else {
+        setError(`क्यामेरा त्रुटि: ${err.message}`);
+      }
+
       setIsLoading(false);
-    } catch (err) {
-      setError('क्यामेरा एक्सेस गर्न सकिएन');
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      setStream(null);
     }
   };
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
-    const video = videoRef.current;
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
 
     if (!context) return;
 
-    // Set canvas dimensions to video dimensions
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = videoRef.current.videoWidth || 640;
+    canvas.height = videoRef.current.videoHeight || 480;
+    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
-    // Draw the video frame to canvas
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Convert canvas to blob
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const file = new File([blob], `issue-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        onCapture(file);
-      }
-    }, 'image/jpeg', 0.8);
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          const file = new File([blob], `capture-${Date.now()}.jpg`, {
+            type: "image/jpeg",
+          });
+          onCapture(file);
+        }
+      },
+      "image/jpeg",
+      0.9
+    );
   };
 
   const toggleCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
+    startCamera(); // Restart with new facing mode
   };
 
   return (
@@ -91,7 +118,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => 
           >
             <X className="h-6 w-6" />
           </button>
-          
+
           <button
             onClick={toggleCamera}
             className="bg-black bg-opacity-50 text-white rounded-full p-3 hover:bg-opacity-70 transition-all"
@@ -100,25 +127,36 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => 
           </button>
         </div>
 
-        {/* Video/Loading/Error */}
-        <div className="relative bg-black rounded-lg overflow-hidden">
+        {/* Video Container */}
+        <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
           {isLoading && (
-            <div className="aspect-video flex items-center justify-center">
+            <div className="flex items-center justify-center h-full">
               <div className="text-center text-white">
                 <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-                <p>क्यामेरा तयार गर्दै...</p>
+                <p>क्यामेरा सुरु हुँदैछ...</p>
               </div>
             </div>
           )}
 
+          {!stream && !error && !isLoading && (
+            <div className="flex items-center justify-center h-full">
+              <button
+                onClick={startCamera}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+              >
+                क्यामेरा सुरु गर्नुहोस्
+              </button>
+            </div>
+          )}
+
           {error && (
-            <div className="aspect-video flex items-center justify-center">
-              <div className="text-center text-white">
+            <div className="flex items-center justify-center h-full text-white text-center px-4">
+              <div>
                 <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>{error}</p>
                 <button
                   onClick={startCamera}
-                  className="mt-4 bg-municipal-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
                 >
                   पुनः प्रयास गर्नुहोस्
                 </button>
@@ -126,31 +164,35 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => 
             </div>
           )}
 
-          {!isLoading && !error && (
+          {stream && !error && (
             <video
               ref={videoRef}
               autoPlay
               playsInline
-              className="w-full aspect-video object-cover"
+              muted
+              className="w-full h-full object-cover"
+              style={{
+                transform: facingMode === "user" ? "scaleX(-1)" : "scaleX(1)",
+              }}
             />
           )}
         </div>
 
         {/* Capture Button */}
-        {!isLoading && !error && (
+        {stream && !error && (
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
             <button
               onClick={capturePhoto}
               className="bg-white rounded-full p-4 shadow-lg hover:scale-110 transition-transform"
             >
-              <div className="w-16 h-16 bg-municipal-blue rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
                 <Camera className="h-8 w-8 text-white" />
               </div>
             </button>
           </div>
         )}
 
-        {/* Hidden canvas for capture */}
+        {/* Hidden Canvas */}
         <canvas ref={canvasRef} className="hidden" />
       </div>
     </div>

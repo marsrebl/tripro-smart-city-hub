@@ -1,337 +1,219 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { Menu, X, Globe } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { User, LogOut, Phone, Globe } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import LoginModal from '../auth/LoginModal';
+import AdminLoginModal from '../auth/AdminLoginModal';
 import logo from '../../images/logo.png';
+import navbag from '../../images/navbag.jpeg';
 
 const Header: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const { currentLanguage, changeLanguage, languages } = useLanguage();
-  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const { user, logout } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
 
-  const handleLogin = () => {
-    const event = new Event('openLoginModal');
-    window.dispatchEvent(event);
-  };
+  React.useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.altKey && e.key === 'A') {
+        e.preventDefault();
+        setShowAdminLoginModal(true);
+      }
+    };
+
+    const handleCustomLoginEvent = () => {
+      setShowLoginModal(true);
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    window.addEventListener('openLoginModal', handleCustomLoginEvent);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener('openLoginModal', handleCustomLoginEvent);
+    };
+  }, []);
+
+  const navigationItems = [
+    { key: 'home', path: '/' },
+    { key: 'services', path: '/services' },
+    { key: 'gallery', path: '/gallery' },
+    { key: 'about', path: '/about' },
+    { key: 'contact', path: '/contact' }
+  ];
 
   return (
-    <header className="header-container">
-      {/* Emergency Contact Bar */}
-      <div className="emergency-bar">
-        <div className="container mx-auto px-4">
-          <div className="emergency-content">
-            <div className="emergency-contacts">
-              <div className="emergency-item">
-                <Phone className="h-4 w-4" />
-                <span className="emergency-label">Emergency:</span>
-                <span className="emergency-number">100</span>
-              </div>
-              <div className="emergency-item">
-                <Phone className="h-4 w-4" />
-                <span className="emergency-label">Police:</span>
-                <span className="emergency-number">100</span>
-              </div>
-              <div className="emergency-item">
-                <Phone className="h-4 w-4" />
-                <span className="emergency-label">Fire:</span>
-                <span className="emergency-number">101</span>
+    <>
+      <header className="bg-white shadow-md">
+        
+                    {/* Top bar with emergency numbers and language switcher */}
+            <div className="bg-municipal-blue text-white py-2">
+              <div className="container mx-auto px-4 flex justify-between items-center text-sm">
+                {/* Left side: Emergency numbers in Nepali */}
+                <div className="flex gap-6">
+                  <span>एम्बुलेन्स: 9865266142</span>
+                  <span>दमकल: 9865321455</span>
+                  <span>ट्राफिक प्रहरी: 9865324578</span>
+                  <span>नेपाल प्रहरी: 9865324512</span>
+                </div>
+
+                {/* Right side: Language switcher */}
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  <select
+                    value={currentLanguage}
+                    onChange={(e) => changeLanguage(e.target.value)}
+                    className="bg-transparent border-none text-white text-sm focus:outline-none"
+                  >
+                    {languages.map((lang) => (
+                      <option key={lang.code} value={lang.code} className="text-black">
+                        {lang.nativeName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-            
-            {/* Language Switcher */}
-            <div className="language-switcher">
-              <button
-                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className="language-button"
-              >
-                <Globe className="h-4 w-4" />
-                <span>{languages.find(lang => lang.code === currentLanguage)?.nativeName}</span>
-              </button>
-              {showLanguageDropdown && (
-                <div className="language-dropdown">
-                  {languages.map((language) => (
-                    <button
-                      key={language.code}
-                      onClick={() => {
-                        changeLanguage(language.code);
-                        setShowLanguageDropdown(false);
-                      }}
-                      className={`language-option ${currentLanguage === language.code ? 'active' : ''}`}
-                    >
-                      {language.nativeName}
+
+
+        {/* Header content with background */}
+        <div className="relative w-full h-36 z-10 overflow-hidden">
+          <div className="absolute inset-0 z-0">
+            <img
+              src={navbag}
+              alt="Navbar Background"
+              className="w-full h-full object-cover opacity-60"
+            />
+            <div className="absolute inset-0 bg-black opacity-30" />
+          </div>
+
+          <div className="container mx-auto px-5 py-3 relative z-10 h-full flex flex-col justify-center">
+            <div className="flex items-center justify-between">
+              {/* Logo and Title */}
+              <div className="flex items-center gap-5">
+                <div className="w-24 h-24 rounded-full flex items-center justify-center bg-white bg-opacity-70">
+                  <img src={logo} alt="City Logo" className="h-full w-full object-contain" />
+                </div>
+                <div>
+                  <h1 className={`text-2xl font-bold text-white ${currentLanguage === 'ne' ? 'nepali' : ''}`}>
+                    {t('city_name')}
+                  </h1>
+                  <p className="text-sm text-white">Digital Government Services</p>
+                </div>
+              </div>
+
+              {/* Desktop Navigation */}
+              <nav className="hidden lg:flex items-center gap-6">
+                {navigationItems.map((item) => (
+                  <Link
+                    key={item.key}
+                    to={item.path}
+                    className="nav-link text-white font-semibold text-lg tracking-wide"
+                  >
+                    {t(item.key)}
+                  </Link>
+                ))}
+
+                {user ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg text-white">Welcome, {user.name}</span>
+                    <button onClick={logout} className="municipal-button text-sm">
+                      {t('logout')}
                     </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Header */}
-      <div className="main-header">
-        <div className="container mx-auto px-4">
-          <div className="header-content">
-            {/* Logo and Title */}
-            <Link to="/" className="header-brand">
-              <img src={logo} alt="Municipality Logo" className="header-logo" />
-              <div className="header-text">
-                <h1 className={`header-title ${currentLanguage === 'ne' ? 'nepali' : ''}`}>
-                  Biratnagar Metropolitan Office Of Municipal Executive
-                </h1>
-                <p className="header-subtitle">
-                  Smart City • Digital Services • Transparent Governance
-                </p>
-              </div>
-            </Link>
-
-            {/* Auth Section */}
-            <div className="auth-section">
-              {user ? (
-                <div className="user-menu">
-                  <div className="user-info">
-                    <User className="h-5 w-5" />
-                    <span className="user-name">{user.name}</span>
                   </div>
-                  <button onClick={logout} className="logout-btn">
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
+                ) : (
+                  <button onClick={() => setShowLoginModal(true)} className="municipal-button text-sm">
+                    {t('login')}
                   </button>
-                </div>
-              ) : (
-                <Link to="/login" className="login-btn">
-                  <User className="h-5 w-5" />
-                  <span>Login</span>
-                </Link>
-              )}
+                )}
+              </nav>
+
+              {/* Mobile Menu Toggle */}
+              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="lg:hidden p-2 text-white">
+                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
             </div>
+
+            {/* Mobile Navigation */}
+            {isMenuOpen && (
+              <nav className="lg:hidden mt-4 pb-4 border-t border-white/30">
+                <div className="flex flex-col gap-3 pt-3">
+                  {navigationItems.map((item) => (
+                    <Link
+                      key={item.key}
+                      to={item.path}
+                      className="mobile-nav-link text-white font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {t(item.key)}
+                    </Link>
+                  ))}
+
+                  {user ? (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm text-white">Welcome, {user.name}</span>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsMenuOpen(false);
+                        }}
+                        className="municipal-button w-fit"
+                      >
+                        {t('logout')}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setShowLoginModal(true);
+                        setIsMenuOpen(false);
+                      }}
+                      className="municipal-button w-fit"
+                    >
+                      {t('login')}
+                    </button>
+                  )}
+                </div>
+              </nav>
+            )}
           </div>
         </div>
-      </div>
+      </header>
 
+      {/* Login Modals */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      <AdminLoginModal isOpen={showAdminLoginModal} onClose={() => setShowAdminLoginModal(false)} />
+
+      {/* Hover Styling */}
       <style>{`
-        .header-container {
-          background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-          color: white;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .emergency-bar {
-          background: rgba(0, 0, 0, 0.1);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-          padding: 0.5rem 0;
-        }
-
-        .emergency-content {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-
-        .emergency-contacts {
-          display: flex;
-          gap: 2rem;
-          align-items: center;
-        }
-
-        .emergency-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.875rem;
-        }
-
-        .emergency-label {
-          opacity: 0.8;
-        }
-
-        .emergency-number {
-          font-weight: 700;
-          color: #fbbf24;
-        }
-
-        .language-switcher {
-          position: relative;
-        }
-
-        .language-button {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 1rem;
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 8px;
-          color: white;
-          font-size: 0.875rem;
-          cursor: pointer;
+        .nav-link {
+          padding: 6px 12px;
+          border-radius: 6px;
           transition: all 0.3s ease;
         }
 
-        .language-button:hover {
-          background: rgba(255, 255, 255, 0.2);
+        .nav-link:hover {
+          background-color: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+          transform: scale(1.05);
         }
 
-        .language-dropdown {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          mt: 0.5rem;
-          background: white;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 8px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-          z-index: 50;
-          min-width: 120px;
-        }
-
-        .language-option {
-          display: block;
-          width: 100%;
-          padding: 0.75rem 1rem;
-          color: #374151;
-          text-align: left;
-          border: none;
-          background: none;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-size: 0.875rem;
-        }
-
-        .language-option:hover {
-          background: #f3f4f6;
-        }
-
-        .language-option.active {
-          background: #3b82f6;
-          color: white;
-        }
-
-        .language-option:first-child {
-          border-radius: 8px 8px 0 0;
-        }
-
-        .language-option:last-child {
-          border-radius: 0 0 8px 8px;
-        }
-
-        .main-header {
-          padding: 1rem 0;
-        }
-
-        .header-content {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-
-        .header-brand {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          text-decoration: none;
-          color: white;
-        }
-
-        .header-logo {
-          width: 60px;
-          height: 60px;
-          object-fit: contain;
-        }
-
-        .header-text {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .header-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin: 0;
-          line-height: 1.2;
-        }
-
-        .header-subtitle {
-          font-size: 0.875rem;
-          opacity: 0.9;
-          margin: 0.25rem 0 0 0;
-        }
-
-        .auth-section {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .user-menu {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .user-info {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        .logout-btn, .login-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 10px;
-          font-weight: 500;
-          font-size: 0.875rem;
-          cursor: pointer;
+        .mobile-nav-link {
+          padding: 8px 12px;
+          border-radius: 6px;
           transition: all 0.3s ease;
-          backdrop-filter: blur(10px);
-          text-decoration: none;
         }
 
-        .logout-btn:hover, .login-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .nepali {
-          font-family: 'Noto Sans Devanagari', sans-serif;
-        }
-
-        @media (max-width: 768px) {
-          .emergency-content {
-            flex-direction: column;
-            text-align: center;
-            gap: 0.5rem;
-          }
-          
-          .emergency-contacts {
-            gap: 1rem;
-          }
-          
-          .header-content {
-            flex-direction: column;
-            text-align: center;
-          }
-          
-          .header-title {
-            font-size: 1.25rem;
-          }
+        .mobile-nav-link:hover {
+          background-color: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
         }
       `}</style>
-    </header>
+    </>
   );
 };
 
